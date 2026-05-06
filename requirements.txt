@@ -7,4 +7,6 @@ PyQt6>=6.6.0
 requests
 selenium
 selenium_wire
+# pkg_resources lives in setuptools <81; selenium-wire's bundled kaitaistruct still imports it.
+setuptools<81
 webdriver_manager
