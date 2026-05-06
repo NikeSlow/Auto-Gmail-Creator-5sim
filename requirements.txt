@@ -1,6 +1,9 @@
 fake_useragent
 fp
 free_proxy
+# selenium-wire bundles old mitmproxy that imports blinker._saferef (removed in blinker 1.7+)
+blinker==1.6.3
+PyQt6>=6.6.0
 requests
 selenium
 selenium_wire
