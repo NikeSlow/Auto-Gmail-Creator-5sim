@@ -5,6 +5,7 @@ free_proxy
 blinker==1.6.3
 PyQt6>=6.6.0
 requests
+PySocks>=1.7.1
 selenium
 selenium_wire
 # pkg_resources lives in setuptools <81; selenium-wire's bundled kaitaistruct still imports it.

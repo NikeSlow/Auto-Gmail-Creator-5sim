@@ -26,6 +26,32 @@ from fake_useragent import UserAgent
 from providers.fivesim import FiveSimProvider
 from providers.sms_base import BotSettings, SmsConfig
 
+# #region agent log
+import json as _agent_json
+
+_AGENT_LOG_PATH = r"c:\dev\telegram-mcp\debug-edd7d7.log"
+
+
+def _agent_dbg(hypothesis_id: str, location: str, message: str, data: dict) -> None:
+    try:
+        line = _agent_json.dumps(
+            {
+                "sessionId": "edd7d7",
+                "runId": "run1",
+                "hypothesisId": hypothesis_id,
+                "location": location,
+                "message": message,
+                "data": data,
+                "timestamp": int(time.time() * 1000),
+            },
+            ensure_ascii=True,
+        ) + "\n"
+        with open(_AGENT_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(line)
+    except Exception:
+        pass
+# #endregion
+
 # Defaults when running `python app.py` without GUI (CLI uses env via SmsConfig.from_env)
 AUTO_GENERATE_UERINFO = True
 AUTO_GENERATE_NUMBER = 10
@@ -152,6 +178,22 @@ def getRandomeUserAgent():
 
 def set_driver(settings: BotSettings, log):
     """Initialize Chrome via Selenium Wire. SOCKS proxy optional (GUI / BotSettings.socks_proxy)."""
+    # #region agent log
+    _agent_dbg(
+        "H5",
+        "app.py:set_driver",
+        "entry",
+        {
+            "data_dir": settings.data_dir,
+            "headless": settings.headless,
+            "socks_present": bool((settings.socks_proxy or "").strip()),
+            "proxy_csv_exists": os.path.exists(
+                os.path.join(settings.data_dir, "Proxy_DB.csv")
+            ),
+        },
+    )
+    _set_driver_t0 = time.time()
+    # #endregion
     seleniumwire_options = {"exclude_hosts": ["google-analytics.com"]}
 
     proxy_path = os.path.join(settings.data_dir, "Proxy_DB.csv")
@@ -227,7 +269,14 @@ def set_driver(settings: BotSettings, log):
 
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options = options, seleniumwire_options=seleniumwire_options)
     #driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()), options = options, seleniumwire_options=seleniumwire_options)
-    
+    # #region agent log
+    _agent_dbg(
+        "H5",
+        "app.py:set_driver",
+        "driver_ready",
+        {"elapsed_ms": int((time.time() - _set_driver_t0) * 1000)},
+    )
+    # #endregion
     return driver
 
 def run_bot(
@@ -235,6 +284,29 @@ def run_bot(
     log=print,
     should_stop: Optional[Callable[[], bool]] = None,
 ):
+    # #region agent log
+    _agent_dbg(
+        "H6",
+        "app.py:run_bot",
+        "entered",
+        {
+            "data_dir": settings.data_dir,
+            "auto_generate_number": settings.auto_generate_number,
+            "headless": settings.headless,
+            "wait": settings.wait,
+            "request_max_try": settings.request_max_try,
+            "first_csv_exists": os.path.exists(
+                os.path.join(settings.data_dir, "First_Name_DB.csv")
+            ),
+            "last_csv_exists": os.path.exists(
+                os.path.join(settings.data_dir, "Last_Name_DB.csv")
+            ),
+            "proxy_csv_exists": os.path.exists(
+                os.path.join(settings.data_dir, "Proxy_DB.csv")
+            ),
+        },
+    )
+    # #endregion
     sms_provider = FiveSimProvider(settings.sms)
     AUTO_GENERATE_UERINFO = settings.auto_generate_userinfo
     AUTO_GENERATE_NUMBER = settings.auto_generate_number
@@ -601,10 +673,11 @@ def run_bot(
                 except:
                     pass
             time.sleep(WAIT*3)
-            log('################ Save to Created.txt ################')
-            f = open('Created.txt', 'a')
-            f.write(user_name + "\t" + password + "\t" +birthday + "\t"+ number + "\n")
-            f.close()
+            log("################ Save to Created.txt ################")
+            os.makedirs(data_dir, exist_ok=True)
+            created_path = os.path.join(data_dir, "Created.txt")
+            with open(created_path, "a", encoding="utf-8", errors="replace") as f:
+                f.write(user_name + "\t" + password + "\t" + birthday + "\t" + number + "\n")
 
             driver.quit()
         except Exception as e:
